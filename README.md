@@ -5,7 +5,7 @@ Really simple script, not mutch thought went into it. Designed to use in Windows
 
 Requirements:
 - Python 3
-- Pillow library
+- Pillow and piexif library
 
 Steps to use:
 
@@ -16,5 +16,8 @@ In accordance with Art. 15(3) GDPR, provide me with a copy of all personal data 
 You will get a download link as an answer to your ticket in-app.
 
 2. Unpack the zipped data to C:\bereal
+
+*Note : Some older accounts (2021) may have a second folder named `bereal` containing jpg images. In that case just move all the jpg files to the `post` folder*
+
 3. Place the python script next to the extracted data and run it
-4. Profit (???)
+4. Enjoy your memories beautifully packaged and sorted by date :)
