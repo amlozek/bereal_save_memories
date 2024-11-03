@@ -1,53 +1,47 @@
 import os
 import json
-from PIL import Image, ExifTags, PngImagePlugin
+from PIL import Image
 from datetime import datetime
+import piexif
 
 # Paths to JSON files and photo directory
 photos_dir = r"C:\bereal\Photos\post"
-memories_json_path = r"C:\bereal\memories.json"
+# memories_json_path = r"C:\bereal\memories.json"
 posts_json_path = r"C:\bereal\posts.json"
 output_dir = r"C:\bereal\ProcessedPhotos"
 os.makedirs(output_dir, exist_ok=True)  # Ensure output directory exists
 
-# Load JSON data
-with open(memories_json_path, 'r', encoding='utf-8') as f:
-    memories_data = json.load(f)
+# Load JSON data from momories
+#with open(memories_json_path, 'r', encoding='utf-8') as f:
+#    memories_data = json.load(f)
 
+# Load JSON data from posts
 with open(posts_json_path, 'r', encoding='utf-8') as f:
     posts_data = json.load(f)
 
-# Function to add EXIF data
-from PIL import Image, ExifTags
-from datetime import datetime
-
-# Add this inside the add_exif function
-def add_exif(img, timestamp_str):
+def add_exif_piexif(timestamp_str):
     # Convert timestamp to EXIF-compatible format
     timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
     exif_time_str = timestamp.strftime("%Y:%m:%d %H:%M:%S")
 
-    # Prepare EXIF data dictionary
-    exif_data = img.getexif()  # Get current EXIF data if available
+    # Create EXIF dictionary
+    exif_dict = {"Exif": {}, "0th": {}}
+    
+    # Set DateTimeOriginal, DateTimeDigitized, and DateTime
+    exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = exif_time_str
+    exif_dict["Exif"][piexif.ExifIFD.DateTimeDigitized] = exif_time_str
+    exif_dict["0th"][piexif.ImageIFD.DateTime] = exif_time_str
 
-    # Get EXIF tags for DateTimeOriginal, DateTimeDigitized, and DateTime
-    date_time_original_tag = next(tag for tag, name in ExifTags.TAGS.items() if name == "DateTimeOriginal")
-    date_time_digitized_tag = next(tag for tag, name in ExifTags.TAGS.items() if name == "DateTimeDigitized")
-    date_time_tag = next(tag for tag, name in ExifTags.TAGS.items() if name == "DateTime")
-
-    # Set all three tags to ensure compatibility with Windows "Date taken"
-    exif_data[date_time_original_tag] = exif_time_str
-    exif_data[date_time_digitized_tag] = exif_time_str
-    exif_data[date_time_tag] = exif_time_str
-
-    return exif_data
+    # Convert EXIF dictionary to bytes
+    exif_bytes = piexif.dump(exif_dict)
+    return exif_bytes
 
 # Process each entry
-for item in memories_data + posts_data:  # Combines both memories and posts
+for item in posts_data:
     # Determine image paths and timestamps
-    primary_path = item.get("frontImage", item.get("primary"))["path"]
-    secondary_path = item.get("backImage", item.get("secondary"))["path"]
-    timestamp = item.get("takenTime", item.get("takenAt"))
+    primary_path = item.get("primary")["path"]
+    secondary_path = item.get("secondary")["path"]
+    timestamp = item.get("takenAt")
 
     # Load images
     primary_img_path = os.path.join(photos_dir, os.path.basename(primary_path))
@@ -68,10 +62,9 @@ for item in memories_data + posts_data:  # Combines both memories and posts
     combined_img.paste(secondary_img, (primary_img.width, 0))
 
     # Add EXIF data
-    exif_data = add_exif(combined_img, timestamp)
+    exif_data = add_exif_piexif(timestamp)
     
     # Save the final image with EXIF data
     output_path = os.path.join(output_dir, f"{os.path.basename(primary_path)}_combined.jpg")
-    exif_data = add_exif(combined_img, timestamp)
     combined_img.save(output_path, "JPEG", exif=exif_data)
     print(f"Saved combined image: {output_path}")
